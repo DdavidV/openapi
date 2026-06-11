@@ -1,0 +1,3 @@
+defmodule Openapi do
+
+end
