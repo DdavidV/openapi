@@ -20,6 +20,8 @@ defmodule Openapi.MixProject do
 
   defp deps do
     [
+      {:phoenix, "~> 1.8.3"},
+      {:yaml_elixir, "~> 2.12"}
     ]
   end
 end
