@@ -1,15 +1,12 @@
 defmodule Openapi.Phoenix do
-require Phoenix.Router
+  require Phoenix.Router
 
   @doc """
   Register an OpenAPI spec and its routes with the application.
 
   Options:
     - handler: Default handler of the routes can be overwritten with `x-handler`
-    - strict (Default `true`): Validates routes on compile time.
-      - Raises an exception if route is already defined by this application.
-      - Raises an exception when a route does not have `x-handler` in definition and handler is not
-        defined in options.
+    - strict (Default `true`): Validates routes at compile time.
     - server: The server/namespace for this spec. Auto-detected from router module if not provided.
 
   """
@@ -25,12 +22,13 @@ require Phoenix.Router
     quote bind_quoted: [server: server, path: path, options: options] do
       handler = Keyword.get(options, :handler)
       server = Keyword.get(options, :server, server)
-      _strict = Keyword.get(options, :strict, true)
+      strict? = Keyword.get(options, :strict, true)
 
       definition = Openapi.read_file!(path)
-      Openapi.save_definition(server, definition)
+      routes = Openapi.Definition.phoenix_routes(definition)
+      if strict?, do: Openapi.RouteValidator.validate(routes, server, handler)
 
-      for route <- Openapi.Definition.phoenix_routes(definition) do
+      for route <- routes do
         Phoenix.Router.match(
           route.method,
           route.path,
@@ -41,11 +39,13 @@ require Phoenix.Router
             openapi: %{
               server: server,
               handler: route.handler || handler,
-              operation_id: Macro.underscore(route.operation_id) |> String.to_atom()
+              operation_id: route.operation_id
             }
           }
         )
       end
+
+      Openapi.save_definition(server, definition)
     end
   end
 

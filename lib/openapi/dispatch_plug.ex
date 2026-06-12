@@ -62,16 +62,11 @@ defmodule Openapi.DispatchPlug do
 
   @behaviour Plug
 
-  import Plug.Conn
-
   @impl true
   def init(opts), do: opts
 
   @impl true
-  def call(conn, _opts) do
-    IO.inspect(conn.private.openapi, label: "OpenAPI params", limit: :infinity)
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(200, JSON.encode!(%{}))
+  def call(%{private: %{openapi: openapi}} = conn, opts) do
+    apply(openapi.handler, openapi.operation_id, [conn, opts])
   end
 end

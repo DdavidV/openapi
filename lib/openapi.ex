@@ -14,9 +14,7 @@ defmodule Openapi do
 
   defp dispatch!(ext, path) when ext in ["yaml", "yml"], do: Openapi.Loader.Yaml.read_file(path)
   defp dispatch!("json", path), do: Openapi.Loader.Json.read_file(path)
-  defp dispatch!(_ext, path) do
-    raise ArgumentError, "Unsupported file extention: #{path}"
-  end
+  defp dispatch!(_ext, path), do: raise(Openapi.Error, "Unsupported file extention: #{path}")
 
   def get_definition(server, default \\ %{}) do
     :persistent_term.get({:openapi, :specs, server}, default)

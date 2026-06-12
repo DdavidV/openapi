@@ -11,11 +11,15 @@ defmodule Openapi.Definition do
     for {path, operations} <- Map.get(definition, "paths", %{}),
         {method, operation} <- operations,
         method in ["get", "post", "put", "patch", "delete", "head", "options", "trace"] do
+      operation_id = Map.get(operation, "operationId")
+      operation_id = if operation_id, do: Macro.underscore(operation_id) |> String.to_atom()
+      handler = Map.get(operation, "x-handler")
+      handler = if handler, do: String.to_atom(handler)
       %Openapi.Route{
         method: String.to_atom(method),
         path: Regex.replace(~r/\{([^}]+)\}/, path, ":\\1"),
-        handler: Map.get(operation, "x-handler"),
-        operation_id: Map.get(operation, "operationId")
+        handler: handler,
+        operation_id: operation_id
       }
     end
   end
