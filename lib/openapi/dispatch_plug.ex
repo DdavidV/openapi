@@ -70,6 +70,8 @@ defmodule Openapi.DispatchPlug do
   @impl true
   def call(conn, _opts) do
     IO.inspect(conn.private.openapi, label: "OpenAPI params", limit: :infinity)
-    send_resp(conn, 200, JSON.encode!(%{}))
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, JSON.encode!(%{}))
   end
 end

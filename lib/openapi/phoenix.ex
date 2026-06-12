@@ -2,12 +2,15 @@ defmodule Openapi.Phoenix do
 require Phoenix.Router
 
   @doc """
+  Register an OpenAPI spec and its routes with the application.
+
   Options:
     - handler: Default handler of the routes can be overwritten with `x-handler`
     - strict (Default `true`): Validates routes on compile time.
       - Raises an exception if route is already defined by this application.
       - Raises an exception when a route does not have `x-handler` in definition and handler is not
         defined in options.
+    - server: The server/namespace for this spec. Auto-detected from router module if not provided.
 
   """
   defmacro openapi(path, options \\ []) do
@@ -20,12 +23,14 @@ require Phoenix.Router
       end)
 
     quote bind_quoted: [server: server, path: path, options: options] do
-      definition = Openapi.read_file!(path)
-      :persistent_term.put(:openapi, definition)
-      routes = Openapi.Route.from_definition(definition)
       handler = Keyword.get(options, :handler)
+      server = Keyword.get(options, :server, server)
       _strict = Keyword.get(options, :strict, true)
-      for route <- routes do
+
+      definition = Openapi.read_file!(path)
+      Openapi.save_definition(server, definition)
+
+      for route <- Openapi.Definition.phoenix_routes(definition) do
         Phoenix.Router.match(
           route.method,
           route.path,
@@ -44,13 +49,20 @@ require Phoenix.Router
     end
   end
 
-  defmacro api_docs(path) do
-    quote bind_quoted: [path: path] do
-      scope "/api-docs" do
-        pipe_through [:api]
-        get "/", Openapi.DocsPlug, :index, alias: false
-        get "/openapi.json", Openapi.DocsPlug, :spec, alias: false
-        get "/*path", Openapi.DocsPlug, :asset, alias: false
+  defmacro swagger_docs(path, options \\ []) do
+    server =
+      Keyword.get_lazy(options, :server, fn ->
+        __CALLER__.module
+        |> Module.split()
+        |> hd()
+        |> String.to_atom()
+      end)
+
+    quote bind_quoted: [path: path, server: server] do
+      scope path do
+        Phoenix.Router.match(:get, "/", Openapi.DocsPlug, {:index, server}, alias: false)
+        Phoenix.Router.match(:get, "/openapi.json", Openapi.DocsPlug, {:spec, server}, alias: false)
+        Phoenix.Router.match(:get, "/*path", Openapi.DocsPlug, {:asset, server}, alias: false)
       end
     end
   end

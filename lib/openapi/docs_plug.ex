@@ -1,47 +1,52 @@
 defmodule Openapi.DocsPlug do
+  @behaviour Plug
+
   import Plug.Conn
 
-  def init(action), do: action
+  @impl true
+  def init({action, server}) when is_atom(action), do: {action, server}
 
-  def call(conn, :index) do
+  @impl true
+  def call(conn, {:index, _server}) do
+    base_path = extract_base_path(conn.request_path)
+
     html =
       :openapi
       |> Application.app_dir("priv/swagger_ui/index.html")
       |> File.read!()
-      |> String.replace("__OPENAPI_URL__", "/api-docs/openapi.json")
+      |> String.replace("__BASE_PATH__", base_path)
+      |> String.replace("__OPENAPI_URL__", "#{base_path}/openapi.json")
 
     conn
     |> put_resp_content_type("text/html")
     |> send_resp(200, html)
   end
 
-  def call(conn, :spec) do
-    json = :persistent_term.get(:openapi)
+  def call(conn, {:spec, server}) do
+    definition = Openapi.get_definition(server)
 
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(200, JSON.encode!(json))
+    |> send_resp(200, JSON.encode!(definition))
   end
 
-  def call(conn, :asset) do
-    # Get the asset filename from either the wildcard path or the request path
+  def call(conn, {:asset, _server}) do
     asset =
       case conn.path_params["path"] do
         path when is_list(path) -> Enum.join(path, "/")
         path when is_binary(path) -> path
-        nil -> String.trim_leading(conn.request_path, "/api-docs/")
+        nil -> ""
       end
 
-    file =
-      :openapi
-      |> Application.app_dir("priv/swagger_ui/#{asset}")
+    file = Application.app_dir(:openapi, "priv/swagger_ui/#{asset}")
 
     case File.read(file) do
       {:ok, content} ->
-        # Special handling for swagger-initializer.js to inject the OpenAPI URL
+        base_path = extract_base_path(conn.request_path)
+        definition_url = "#{base_path}/openapi.json"
         content =
           if String.ends_with?(asset, "swagger-initializer.js") do
-            String.replace(content, "__OPENAPI_URL__", "/api-docs/openapi.json")
+            String.replace(content, "__OPENAPI_URL__", definition_url)
           else
             content
           end
@@ -49,9 +54,18 @@ defmodule Openapi.DocsPlug do
         conn
         |> put_resp_content_type(content_type(asset))
         |> send_resp(200, content)
+
       {:error, _} ->
         conn
-        |> send_resp(404, "Not found")
+        |> put_resp_content_type("application/json")
+        |> send_resp(404, JSON.encode!(%{"error" => "Not found"}))
+    end
+  end
+
+  defp extract_base_path(request_path) do
+    case String.split(request_path, "/", trim: true) do
+      [] -> ""
+      [base | _] -> "/#{base}"
     end
   end
 

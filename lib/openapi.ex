@@ -16,4 +16,16 @@ defmodule Openapi do
     raise ArgumentError, "Unsupported file extention: #{path}"
   end
 
+  def get_definition(server, default \\ %{}) do
+    :persistent_term.get({:openapi, :specs, server}, default)
+  end
+
+  def save_definition(server, definition) do
+    merged_definition =
+      server
+      |> get_definition()
+      |> Openapi.Definition.merge(definition)
+    :persistent_term.put({:openapi, :specs, server}, merged_definition)
+  end
+
 end
