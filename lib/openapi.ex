@@ -1,5 +1,7 @@
 defmodule Openapi do
 
+  def swagger_ui_version, do: "5.32.0"
+
   def read_file!(path) do
     path
     |> Path.extname()
