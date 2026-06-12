@@ -21,17 +21,17 @@ require Phoenix.Router
 
     quote bind_quoted: [server: server, path: path, options: options] do
       definition = Openapi.read_file!(path)
+      :persistent_term.put(:openapi, definition)
       routes = Openapi.Route.from_definition(definition)
       handler = Keyword.get(options, :handler)
       _strict = Keyword.get(options, :strict, true)
-      IO.inspect(routes, limit: :infinity)
-      IO.inspect(server, label: "server name")
       for route <- routes do
         Phoenix.Router.match(
           route.method,
           route.path,
           Openapi.DispatchPlug,
           [],
+          alias: false,
           private: %{
             openapi: %{
               server: server,
@@ -40,6 +40,17 @@ require Phoenix.Router
             }
           }
         )
+      end
+    end
+  end
+
+  defmacro api_docs(path) do
+    quote bind_quoted: [path: path] do
+      scope "/api-docs" do
+        pipe_through [:api]
+        get "/", Openapi.DocsPlug, :index, alias: false
+        get "/openapi.json", Openapi.DocsPlug, :spec, alias: false
+        get "/*path", Openapi.DocsPlug, :asset, alias: false
       end
     end
   end
