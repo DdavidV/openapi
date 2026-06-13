@@ -1,4 +1,37 @@
 defmodule Openapi.DocsPlug do
+  @moduledoc """
+  Plug responsible for serving OpenAPI documentation and Swagger UI assets.
+
+  It is typically mounted through `Openapi.swagger_docs/2` and handles three
+  different request types:
+
+  ## 1. Swagger UI entrypoint (`:index`)
+
+  Renders the Swagger UI HTML shell and injects runtime configuration such as:
+
+    - Base path where the docs are mounted
+    - URL to the generated OpenAPI JSON (`/openapi.json`)
+
+  This enables the Swagger UI frontend to correctly load API metadata.
+
+  ## 2. OpenAPI specification (`:spec`)
+
+  Returns the compiled OpenAPI definition as JSON. This definition is retrieved
+  from the server registered via the `:server` option.
+
+  ## 3. Static Swagger UI assets (`:asset`)
+
+  Serves static files required by Swagger UI, such as:
+
+    - JavaScript bundles
+    - CSS stylesheets
+    - images and icons
+
+  Files are resolved from the application's `priv/swagger_ui` directory.
+
+  The plug ensures that only files inside this directory are accessible.
+  """
+
   @behaviour Plug
 
   import Plug.Conn

@@ -8,8 +8,13 @@ defmodule Openapi.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      test_coverage: [tool: ExCoveralls],
       deps: deps(),
-      test_coverage: [tool: ExCoveralls]
+      # For hex package
+      name: "Openapi",
+      description: "A lightweight OpenAPI-first routing, validation and documentation layer",
+      source_url: "https://github.com/DdavidV/openapi",
+      package: package()
     ]
   end
 
@@ -42,4 +47,14 @@ defmodule Openapi.MixProject do
       {:excoveralls, "~> 0.18", only: :test}
     ]
   end
+
+  defp package() do
+    [
+      maintainers: ["Duneczki Dávid Vendel"],
+      licenses: ["MIT"],
+      files: ["lib", "priv", "mix.exs", "README*", "LICENSE*", "CHANGELOG*"],
+      links: %{"GitHub" => "https://github.com/DdavidV/openapi"}
+    ]
+  end
+
 end

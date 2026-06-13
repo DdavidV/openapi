@@ -49,6 +49,9 @@ defmodule Openapi.Phoenix do
     end
   end
 
+  @doc """
+  Register swagger-ui to a given path.
+  """
   defmacro swagger_docs(path, options \\ []) do
     server =
       Keyword.get_lazy(options, :server, fn ->
