@@ -6,9 +6,6 @@ applications.
 It parses OpenAPI (YAML/JSON) definitions, generates Phoenix routes, optionally validates requests
 using JSON Schema, and provides built-in Swagger UI integration for interactive API documentation.
 
-## TODO:
-- JSON schema validation
-
 ## Usage
 
 ```elixir
@@ -58,6 +55,10 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/openapi>.
+
+## TODO:
+- JSON schema validation
+- Better definition merge (maybe conflict errors?)
 
 # License
 

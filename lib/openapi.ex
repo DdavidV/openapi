@@ -1,6 +1,15 @@
 defmodule Openapi do
 
+  # This can change at any time and only returns a string so just ignore it.
+  # coveralls-ignore-start
+  @doc """
+  Returns the bundled Swagger UI version used by the OpenAPI integration.
+
+  This value corresponds to the static Swagger UI assets shipped with the library
+  and is used for serving the documentation frontend.
+  """
   def swagger_ui_version, do: "5.32.0"
+  # coveralls-ignore-stop
 
   def read_file!(path) do
     path
