@@ -16,7 +16,7 @@ defmodule Openapi.PhoenixIntegrationTest do
       |> TestEndpoint.call([])
 
     assert conn.status == 200
-    assert_received {:openapi, "/users", %{"context" => %{operation_id: :handle_request}}}
+    assert_received {:openapi, "/users", %{"openapi_context" => %{operation_id: :handle_request}}}
   end
 
   test "GET /api-docs returns swagger ui html" do

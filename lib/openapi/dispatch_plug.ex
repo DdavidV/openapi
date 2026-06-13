@@ -67,7 +67,7 @@ defmodule Openapi.DispatchPlug do
 
   @impl true
   def call(%{private: %{openapi: openapi}} = conn, _opts) do
-    params = Map.put(conn.params, "context", openapi)
+    params = Map.put(conn.params, "openapi_context", openapi)
     apply(openapi.handler, openapi.operation_id, [conn, params])
   end
 end
