@@ -31,34 +31,43 @@ defmodule Openapi.DocsPlug do
   end
 
   def call(conn, {:asset, _server}) do
+    base_dir =
+      :openapi
+      |> Application.app_dir("priv/swagger_ui")
+      |> Path.expand()
+
     asset =
-      case conn.path_params["path"] do
-        path when is_list(path) -> Enum.join(path, "/")
-        path when is_binary(path) -> path
-        nil -> ""
+      conn.path_params["path"]
+      |> List.wrap()
+      |> Enum.join("/")
+
+    requested_asset = Path.expand(asset, base_dir)
+
+    if not String.starts_with?(requested_asset, base_dir) do
+      conn
+      |> put_resp_content_type("application/json")
+      |> send_resp(403, JSON.encode!(%{"error" => "forbidden"}))
+    else
+      case File.read(requested_asset) do
+        {:ok, content} ->
+          base_path = extract_base_path(conn.request_path)
+          definition_url = "#{base_path}/openapi.json"
+          content =
+            if String.ends_with?(asset, "swagger-initializer.js") do
+              String.replace(content, "__OPENAPI_URL__", definition_url)
+            else
+              content
+            end
+
+          conn
+          |> put_resp_content_type(content_type(asset))
+          |> send_resp(200, content)
+
+        {:error, _} ->
+          conn
+          |> put_resp_content_type("application/json")
+          |> send_resp(404, JSON.encode!(%{"error" => "Not found"}))
       end
-
-    file = Application.app_dir(:openapi, "priv/swagger_ui/#{asset}")
-
-    case File.read(file) do
-      {:ok, content} ->
-        base_path = extract_base_path(conn.request_path)
-        definition_url = "#{base_path}/openapi.json"
-        content =
-          if String.ends_with?(asset, "swagger-initializer.js") do
-            String.replace(content, "__OPENAPI_URL__", definition_url)
-          else
-            content
-          end
-
-        conn
-        |> put_resp_content_type(content_type(asset))
-        |> send_resp(200, content)
-
-      {:error, _} ->
-        conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(404, JSON.encode!(%{"error" => "Not found"}))
     end
   end
 
@@ -73,12 +82,7 @@ defmodule Openapi.DocsPlug do
     case Path.extname(filename) do
       ".css" -> "text/css"
       ".js" -> "application/javascript"
-      ".json" -> "application/json"
-      ".html" -> "text/html"
       ".png" -> "image/png"
-      ".svg" -> "image/svg+xml"
-      ".ico" -> "image/x-icon"
-      _other -> "application/octet-stream"
     end
   end
 end
