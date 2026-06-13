@@ -24,6 +24,7 @@ defmodule Openapi.RouteValidator do
     |> validate_handlers(routes)
 
     validate_operation_id(global_handler, routes)
+    :ok
   end
 
   defp validate_handlers(has_global_handler?, routes) do
@@ -32,7 +33,7 @@ defmodule Openapi.RouteValidator do
         if is_nil(route_handler) do
           not has_global_handler?
         else
-          valid_module?(route_handler)
+          not valid_module?(route_handler)
         end
       end)
 

@@ -163,4 +163,14 @@ defmodule Openapi.DefinitionTest do
     }
   end
 
+  test "Retrieve and save definition" do
+    server = :server
+    assert nil == Openapi.get_definition(server, nil)
+    definition = Openapi.read_file!("test/resources/petstore_openapi_3.2.0.yml")
+    assert :ok == Openapi.save_definition(server, definition)
+    assert match?(%{"openapi" => "3.2.0"}, Openapi.get_definition(server, nil))
+    # Delete definition from persistent_term to not interfere with other tests
+    :persistent_term.erase({:openapi, :specs, server})
+  end
+
 end
