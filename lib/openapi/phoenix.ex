@@ -61,8 +61,9 @@ defmodule Openapi.Phoenix do
         |> String.to_atom()
       end)
 
-    quote bind_quoted: [path: path, server: server] do
+    quote bind_quoted: [server: server, path: path, options: options] do
       scope path do
+        server = Keyword.get(options, :server, server)
         Phoenix.Router.match(:get, "/", Openapi.DocsPlug, {:index, server}, alias: false)
         Phoenix.Router.match(:get, "/openapi.json", Openapi.DocsPlug, {:spec, server}, alias: false)
         Phoenix.Router.match(:get, "/*path", Openapi.DocsPlug, {:asset, server}, alias: false)
