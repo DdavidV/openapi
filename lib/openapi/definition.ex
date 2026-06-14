@@ -1,4 +1,24 @@
 defmodule Openapi.Definition do
+  @default_definition %{
+    "openapi" => "3.0.0",
+    "info" => %{
+      "title" => "API",
+      "description" => "Openapi definition",
+      "version" => "0.0.1"
+    },
+    "paths" => %{}
+  }
+
+  @doc """
+  Normalizes an OpenAPI definition by merging it with default values.
+
+  This function ensures that the resulting OpenAPI document always contains the minimum required
+  structure needed for downstream processing (such as route generation and Swagger UI rendering).
+  """
+  def normalize(definition) do
+    merge(@default_definition, definition)
+  end
+
   @doc """
   Prefixes all OpenAPI path definitions with the given prefix.
 

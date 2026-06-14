@@ -1,6 +1,11 @@
 defmodule Openapi.DefinitionTest do
   use ExUnit.Case
 
+  test "Read alway generates bare minimum" do
+    definition = Openapi.read_file!("test/resources/empty.yaml")
+    assert match?(%{"openapi" => _, "info" => _, "paths" => _}, definition)
+  end
+
   test "Read yaml definition" do
     definition = Openapi.read_file!("test/resources/petstore_openapi_3.2.0.yaml")
     assert match?(%{"openapi" => "3.2.0"}, definition)

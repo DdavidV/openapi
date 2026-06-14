@@ -10,11 +10,18 @@ defmodule Openapi do
   def swagger_ui_version, do: "5.32.0"
   # coveralls-ignore-stop
 
+  @doc """
+  Reads and parses an OpenAPI definition file.
+
+  Supports multiple file formats (e.g. YAML, JSON) by dispatching to the appropriate parser based on
+  the file extension.
+  """
   def read_file!(path) do
     path
     |> Path.extname()
     |> normalize_ext()
     |> dispatch!(path)
+    |> Openapi.Definition.normalize()
   end
 
   defp normalize_ext("." <> ext), do: ext
@@ -24,10 +31,19 @@ defmodule Openapi do
   defp dispatch!("json", path), do: Openapi.Loader.Json.read_file(path)
   defp dispatch!(_ext, path), do: raise(Openapi.Error, "Unsupported file extention: #{path}")
 
+  @doc """
+  Retrieves the OpenAPI definition for a given server from `:persistent_term`.
+  """
   def get_definition(server, default \\ %{}) do
     :persistent_term.get({:openapi, :specs, server}, default)
   end
 
+  @doc """
+  Stores the OpenAPI definition for a given server in `:persistent_term`.
+
+  The provided definition is merged with any previously registered definition for the same server
+  before being stored.
+  """
   def save_definition(server, definition) do
     merged_definition =
       server
