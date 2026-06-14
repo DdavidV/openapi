@@ -1,6 +1,59 @@
 defmodule Openapi.Definition do
 
   @doc """
+  Prefixes all OpenAPI path definitions with the given prefix.
+
+  This function transforms the `"paths"` section of an OpenAPI definition by adding a leading scope
+  (e.g. `/v1`) to every defined route.
+
+  It preserves all HTTP operations and metadata under each path.
+
+  This function is primarily useful when integrating OpenAPI definitions inside Phoenix routers that
+  use `scope/2`.
+
+  For example:
+  ```elixir
+  scope "/v1" do
+    openapi "priv/swagger.yaml"
+  end
+  ```
+
+  The OpenAPI file may define paths like:
+  ```elixir
+  /users
+  /users/{id}
+  ```
+
+  But Phoenix will mount the routes under `/v1`, meaning the *actual runtime
+  routes* become:
+  ```elixir
+  /v1/users
+  /v1/users/:id
+  ```
+  In this case, you may want the OpenAPI document to reflect the same structure so that Swagger UI
+  match the real routing layout.
+  """
+  def prefix_routes(definition, nil), do: definition
+  def prefix_routes(definition, prefix) do
+    paths =
+      definition
+      |> Map.get("paths", %{})
+      |> Map.new(fn {path, operations} ->
+        {join_paths(prefix, path), operations}
+      end)
+
+    Map.put(definition, "paths", paths)
+  end
+
+  defp join_paths(prefix, path) do
+    "/" <>
+      Path.join(
+        String.trim_leading(prefix, "/"),
+        String.trim_leading(path, "/")
+      )
+  end
+
+  @doc """
   Converts an OpenAPI/Swagger `paths` definition into a list of Phoenix-compatible routes.
 
   This function extracts HTTP operations from the OpenAPI document and transforms them

@@ -173,4 +173,36 @@ defmodule Openapi.DefinitionTest do
     :persistent_term.erase({:openapi, :specs, server})
   end
 
+  test "prefixes simple paths" do
+    definition = %{
+      "paths" => %{
+        "/users" => %{"get" => %{}},
+        "/posts" => %{"get" => %{}}
+      }
+    }
+
+    result = Openapi.Definition.prefix_routes(definition, "/v1")
+
+    assert result["paths"] == %{
+      "/v1/users" => %{"get" => %{}},
+      "/v1/posts" => %{"get" => %{}}
+    }
+  end
+
+  test "prefixes simple paths with nil" do
+    definition = %{
+      "paths" => %{
+        "/users" => %{"get" => %{}},
+        "/posts" => %{"get" => %{}}
+      }
+    }
+
+    result = Openapi.Definition.prefix_routes(definition, nil)
+
+    assert result["paths"] == %{
+      "/users" => %{"get" => %{}},
+      "/posts" => %{"get" => %{}}
+    }
+  end
+
 end

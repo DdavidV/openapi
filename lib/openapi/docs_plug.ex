@@ -37,25 +37,24 @@ defmodule Openapi.DocsPlug do
   import Plug.Conn
 
   @impl true
-  def init({action, server}) when is_atom(action), do: {action, server}
+  def init(options), do: options
 
   @impl true
-  def call(conn, {:index, _server}) do
-    base_path = extract_base_path(conn.request_path)
+  def call(conn, {:index, _server, mount_path}) do
 
     html =
       :openapi
       |> Application.app_dir("priv/swagger_ui/index.html")
       |> File.read!()
-      |> String.replace("__BASE_PATH__", base_path)
-      |> String.replace("__OPENAPI_URL__", "#{base_path}/openapi.json")
+      |> String.replace("__BASE_PATH__", mount_path)
+      |> String.replace("__OPENAPI_URL__", "#{mount_path}/openapi.json")
 
     conn
     |> put_resp_content_type("text/html")
     |> send_resp(200, html)
   end
 
-  def call(conn, {:spec, server}) do
+  def call(conn, {:spec, server, _mount_path}) do
     definition = Openapi.get_definition(server)
 
     conn
@@ -63,7 +62,7 @@ defmodule Openapi.DocsPlug do
     |> send_resp(200, JSON.encode!(definition))
   end
 
-  def call(conn, {:asset, _server}) do
+  def call(conn, {:asset, _server, mount_path}) do
     base_dir =
       :openapi
       |> Application.app_dir("priv/swagger_ui")
@@ -83,8 +82,7 @@ defmodule Openapi.DocsPlug do
     else
       case File.read(requested_asset) do
         {:ok, content} ->
-          base_path = extract_base_path(conn.request_path)
-          definition_url = "#{base_path}/openapi.json"
+          definition_url = "#{mount_path}/openapi.json"
           content =
             if String.ends_with?(asset, "swagger-initializer.js") do
               String.replace(content, "__OPENAPI_URL__", definition_url)
@@ -101,13 +99,6 @@ defmodule Openapi.DocsPlug do
           |> put_resp_content_type("application/json")
           |> send_resp(404, JSON.encode!(%{"error" => "Not found"}))
       end
-    end
-  end
-
-  defp extract_base_path(request_path) do
-    case String.split(request_path, "/", trim: true) do
-      [] -> ""
-      [base | _] -> "/#{base}"
     end
   end
 
