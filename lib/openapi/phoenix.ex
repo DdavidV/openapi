@@ -73,10 +73,15 @@ defmodule Openapi.Phoenix do
         prefix = Keyword.get(options, :prefix)
         path = "#{prefix}#{path}"
         Phoenix.Router.match(:get, "/", Openapi.DocsPlug, {:index, server, path}, alias: false)
-        Phoenix.Router.match(:get, "/openapi.json", Openapi.DocsPlug, {:spec, server, path}, alias: false)
-        Phoenix.Router.match(:get, "/*path", Openapi.DocsPlug, {:asset, server, path}, alias: false)
+
+        Phoenix.Router.match(:get, "/openapi.json", Openapi.DocsPlug, {:spec, server, path},
+          alias: false
+        )
+
+        Phoenix.Router.match(:get, "/*path", Openapi.DocsPlug, {:asset, server, path},
+          alias: false
+        )
       end
     end
   end
-
 end

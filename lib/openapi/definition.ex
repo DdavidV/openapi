@@ -1,5 +1,4 @@
 defmodule Openapi.Definition do
-
   @doc """
   Prefixes all OpenAPI path definitions with the given prefix.
 
@@ -34,6 +33,7 @@ defmodule Openapi.Definition do
   match the real routing layout.
   """
   def prefix_routes(definition, nil), do: definition
+
   def prefix_routes(definition, prefix) do
     paths =
       definition
@@ -68,6 +68,7 @@ defmodule Openapi.Definition do
       operation_id = if operation_id, do: Macro.underscore(operation_id) |> String.to_atom()
       handler = Map.get(operation, "x-handler")
       handler = if handler, do: String.to_atom(handler)
+
       %Openapi.Route{
         method: String.to_atom(method),
         path: Regex.replace(~r/\{([^}]+)\}/, path, ":\\1"),
@@ -118,8 +119,8 @@ defmodule Openapi.Definition do
   defp merge_unique_by(list1, list2, fun) do
     list1 = list1 || []
     list2 = list2 || []
+
     (list1 ++ list2)
     |> Enum.uniq_by(fun)
   end
-
 end

@@ -57,5 +57,4 @@ defmodule Openapi.MixProject do
       links: %{"GitHub" => "https://github.com/DdavidV/openapi"}
     ]
   end
-
 end

@@ -51,9 +51,9 @@ defmodule Openapi.DefinitionTest do
     merged = Openapi.Definition.merge(definition1, definition2)
 
     assert merged["servers"] == [
-      %{"url" => "https://api.v1.example.com"},
-      %{"url" => "https://api.v2.example.com"}
-    ]
+             %{"url" => "https://api.v1.example.com"},
+             %{"url" => "https://api.v2.example.com"}
+           ]
   end
 
   test "Merge tags" do
@@ -74,11 +74,11 @@ defmodule Openapi.DefinitionTest do
     merged = Openapi.Definition.merge(definition1, definition2)
 
     assert merged["tags"] == [
-      %{"name" => "users"},
-      %{"name" => "auth"},
-      %{"name" => "pets"},
-      %{"name" => "billing"}
-    ]
+             %{"name" => "users"},
+             %{"name" => "auth"},
+             %{"name" => "pets"},
+             %{"name" => "billing"}
+           ]
   end
 
   test "Merge paths" do
@@ -105,17 +105,17 @@ defmodule Openapi.DefinitionTest do
     merged = Openapi.Definition.merge(definition1, definition2)
 
     assert merged["paths"] == %{
-      "/users" => %{
-        "get" => %{
-          "operationId" => "listUsers"
-        }
-      },
-      "/pets" => %{
-        "get" => %{
-          "operationId" => "listPets"
-        }
-      }
-    }
+             "/users" => %{
+               "get" => %{
+                 "operationId" => "listUsers"
+               }
+             },
+             "/pets" => %{
+               "get" => %{
+                 "operationId" => "listPets"
+               }
+             }
+           }
   end
 
   test "Merge components" do
@@ -148,19 +148,19 @@ defmodule Openapi.DefinitionTest do
     merged = Openapi.Definition.merge(definition1, definition2)
 
     assert merged["components"]["schemas"] == %{
-      "User" => %{
-        "type" => "object",
-        "properties" => %{
-          "id" => %{"type" => "integer"}
-        }
-      },
-      "Pet" => %{
-        "type" => "object",
-        "properties" => %{
-          "name" => %{"type" => "string"}
-        }
-      }
-    }
+             "User" => %{
+               "type" => "object",
+               "properties" => %{
+                 "id" => %{"type" => "integer"}
+               }
+             },
+             "Pet" => %{
+               "type" => "object",
+               "properties" => %{
+                 "name" => %{"type" => "string"}
+               }
+             }
+           }
   end
 
   test "Retrieve and save definition" do
@@ -184,9 +184,9 @@ defmodule Openapi.DefinitionTest do
     result = Openapi.Definition.prefix_routes(definition, "/v1")
 
     assert result["paths"] == %{
-      "/v1/users" => %{"get" => %{}},
-      "/v1/posts" => %{"get" => %{}}
-    }
+             "/v1/users" => %{"get" => %{}},
+             "/v1/posts" => %{"get" => %{}}
+           }
   end
 
   test "prefixes simple paths with nil" do
@@ -200,9 +200,8 @@ defmodule Openapi.DefinitionTest do
     result = Openapi.Definition.prefix_routes(definition, nil)
 
     assert result["paths"] == %{
-      "/users" => %{"get" => %{}},
-      "/posts" => %{"get" => %{}}
-    }
+             "/users" => %{"get" => %{}},
+             "/posts" => %{"get" => %{}}
+           }
   end
-
 end

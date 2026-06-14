@@ -72,5 +72,4 @@ defmodule Openapi.RouteTest do
       RouteValidator.validate([route], :server, Openapi.TestHandler)
     end
   end
-
 end

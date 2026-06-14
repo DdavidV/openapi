@@ -1,5 +1,4 @@
 defmodule Openapi do
-
   # This can change at any time and only returns a string so just ignore it.
   # coveralls-ignore-start
   @doc """
@@ -34,7 +33,7 @@ defmodule Openapi do
       server
       |> get_definition()
       |> Openapi.Definition.merge(definition)
+
     :persistent_term.put({:openapi, :specs, server}, merged_definition)
   end
-
 end

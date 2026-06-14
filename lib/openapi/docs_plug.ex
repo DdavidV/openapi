@@ -41,7 +41,6 @@ defmodule Openapi.DocsPlug do
 
   @impl true
   def call(conn, {:index, _server, mount_path}) do
-
     html =
       :openapi
       |> Application.app_dir("priv/swagger_ui/index.html")
@@ -83,6 +82,7 @@ defmodule Openapi.DocsPlug do
       case File.read(requested_asset) do
         {:ok, content} ->
           definition_url = "#{mount_path}/openapi.json"
+
           content =
             if String.ends_with?(asset, "swagger-initializer.js") do
               String.replace(content, "__OPENAPI_URL__", definition_url)
