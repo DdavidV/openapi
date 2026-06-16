@@ -1,3 +1,16 @@
+## 0.2.0 (2026 June 16) BREAKING CHANGE!
+
+Users now required to use `use Openapi.Phoenix` instead of `import Openapi.Phoenix` in their routers
+
+### Fixes
+- definitions were only available during the initial compilation thus swagger-ui was broken most of
+  the times. For this reason `Openapi.Phoenix` was changed to create module parameters for openapi
+  files. Furthermore modules are now registered on_load to a list of routers located in `persistent_term`.
+
+### Enhancements
+- definitions are not loaded to the `persistent_term` by default it has been switched to load only
+  when the resource is needed.
+
 ## 0.1.1 (2026 June 14)
 
 ### Fixes
