@@ -1,6 +1,6 @@
 defmodule Openapi.TestRouter do
   use Phoenix.Router
-  import Openapi.Phoenix
+  use Openapi.Phoenix
 
   pipeline :api do
     plug(:accepts, ["json"])

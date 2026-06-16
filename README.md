@@ -11,7 +11,7 @@ using JSON Schema, and provides built-in Swagger UI integration for interactive 
 ```elixir
 defmodule MyAppWeb.Router do
   use MyAppWeb, :router
-  import Openapi.Phoenix
+  use Openapi.Phoenix
 
   pipeline :api do
     plug :accepts, ["json"]

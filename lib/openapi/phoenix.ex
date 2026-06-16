@@ -1,5 +1,49 @@
 defmodule Openapi.Phoenix do
+  @moduledoc """
+  Basic Phoenix integration helpers for OpenAPI support.
+
+  This module provides macros that help integrate OpenAPI definition tracking into Phoenix routers
+  and applications.
+
+  It enables routers to declare OpenAPI files and participate in automatic discovery and aggregation
+  of API definitions across the system.
+  """
+
   require Phoenix.Router
+
+  @doc """
+  Injects OpenAPI router functionality into a module.
+
+  When used, the module:
+  - Registers itself in `:persistent_term` as an OpenAPI router on load
+  - Enables accumulation of `@openapi_files` module attributes
+  - Exposes `__openapi_files__/0` for retrieving declared OpenAPI files
+  - Imports `Openapi.Phoenix` helpers
+
+  This allows the module to participate automatically in OpenAPI definition discovery and generation.
+  """
+  defmacro __using__(_) do
+    quote do
+      import Openapi.Phoenix
+      @on_load :__register_openapi_router__
+
+      Module.register_attribute(__MODULE__, :openapi_files,
+        accumulate: true,
+        persist: true
+      )
+
+      def __register_openapi_router__ do
+        routers = :persistent_term.get({:openapi, :routers}, [])
+        :persistent_term.put({:openapi, :routers}, [__MODULE__ | routers])
+      end
+
+      def __openapi_files__ do
+        __MODULE__.__info__(:attributes)
+        |> Keyword.get_values(:openapi_files)
+        |> List.flatten()
+      end
+    end
+  end
 
   @doc """
   Register an OpenAPI spec and its routes with the application.
@@ -46,8 +90,11 @@ defmodule Openapi.Phoenix do
         )
       end
 
-      definition = Openapi.Definition.prefix_routes(definition, prefix)
-      Openapi.save_definition(server, definition)
+      @openapi_files %{
+        server: server,
+        file: path,
+        prefix: prefix
+      }
     end
   end
 

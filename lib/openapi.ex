@@ -32,24 +32,47 @@ defmodule Openapi do
   defp dispatch!(_ext, path), do: raise(Openapi.Error, "Unsupported file extention: #{path}")
 
   @doc """
-  Retrieves the OpenAPI definition for a given server from `:persistent_term`.
+  Returns the cached OpenAPI definition for the given server.
+
+  If no cached definition exists, it builds it via `find_definition/1` and returns the result.
+
+  `find_definition/1` collects all registered routers, extracts their OpenAPI files, filters by
+  server, builds the definitions, merges them, and persists the result via `save_definition/2`.
   """
-  def get_definition(server, default \\ %{}) do
-    :persistent_term.get({:openapi, :specs, server}, default)
+  def get_definition(server) do
+    case :persistent_term.get({:openapi, :specs, server}, %{}) do
+      definition when map_size(definition) == 0 ->
+        find_definition(server)
+
+      definition ->
+        definition
+    end
+  end
+
+  defp find_definition(server) do
+    definition =
+      :persistent_term.get({:openapi, :routers}, [])
+      |> Enum.flat_map(fn router ->
+        router.__openapi_files__()
+      end)
+      |> Enum.filter(&(&1.server == server))
+      |> Enum.reduce(%{}, fn data, acc ->
+        definition =
+          Openapi.read_file!(data.file)
+          |> Openapi.Definition.prefix_routes(data.prefix)
+
+        Openapi.Definition.merge(acc, definition)
+      end)
+
+    save_definition(server, definition)
+    definition
   end
 
   @doc """
-  Stores the OpenAPI definition for a given server in `:persistent_term`.
-
-  The provided definition is merged with any previously registered definition for the same server
-  before being stored.
+  Stores the OpenAPI definition in persistent storage for the given server.
   """
+  def save_definition(_server, definition) when map_size(definition) == 0, do: :ok
   def save_definition(server, definition) do
-    merged_definition =
-      server
-      |> get_definition()
-      |> Openapi.Definition.merge(definition)
-
-    :persistent_term.put({:openapi, :specs, server}, merged_definition)
+    :persistent_term.put({:openapi, :specs, server}, definition)
   end
 end

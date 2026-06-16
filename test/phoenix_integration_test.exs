@@ -40,6 +40,8 @@ defmodule Openapi.PhoenixIntegrationTest do
 
     assert conn.status == 200
     assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
+
+    assert match?(%{"openapi" => "3.0.0"}, Jason.decode!(conn.resp_body))
   end
 
   test "GET swagger assets are served via wildcard route" do
