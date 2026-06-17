@@ -1,3 +1,16 @@
+## 0.3.0 (2026 June 17)
+
+From this version `openapi` contains every feature that has been planned from the start.
+Further versions will contain features and fixes which are coming from extended use of the library.
+Possible features (these are just speculations):
+- Code generator from yaml
+- Own router that does not require phoenix
+
+### Enhancements
+- added documentation
+- added response and request validator plug
+- added telemetry to endpoint dispatches
+
 ## 0.2.0 (2026 June 16) BREAKING CHANGE!
 
 Users now required to use `use Openapi.Phoenix` instead of `import Openapi.Phoenix` in their routers
