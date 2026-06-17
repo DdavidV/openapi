@@ -239,4 +239,73 @@ defmodule Openapi.ValidatorPlugTest do
 
     refute conn.halted
   end
+
+  test "emits telemetry stop event with empty errors on valid request", %{schemas: schemas} do
+    handler_id = {__MODULE__, :telemetry_valid}
+
+    :telemetry.attach(
+      handler_id,
+      [:openapi, :request, :validation, :stop],
+      fn _event, measurements, metadata, _ ->
+        send(self(), {:telemetry_stop, measurements, metadata})
+      end,
+      nil
+    )
+
+    build_conn(:post, "/pets", :create_pet, schemas)
+    |> Map.put(:body_params, %{"name" => "Max"})
+    |> put_req_header("content-type", "application/json")
+    |> Openapi.ValidatorPlug.call(plug_opts())
+
+    assert_received {:telemetry_stop, %{duration: _},
+                     %{errors: [], operation_id: :create_pet, server: @server}}
+  after
+    :telemetry.detach({__MODULE__, :telemetry_valid})
+  end
+
+  test "emits telemetry stop event with errors on invalid request", %{schemas: schemas} do
+    handler_id = {__MODULE__, :telemetry_invalid}
+
+    :telemetry.attach(
+      handler_id,
+      [:openapi, :request, :validation, :stop],
+      fn _event, measurements, metadata, _ ->
+        send(self(), {:telemetry_stop, measurements, metadata})
+      end,
+      nil
+    )
+
+    build_conn(:post, "/pets", :create_pet, schemas)
+    |> Map.put(:body_params, %{})
+    |> put_req_header("content-type", "application/json")
+    |> Openapi.ValidatorPlug.call(plug_opts())
+
+    assert_received {:telemetry_stop, %{duration: _},
+                     %{errors: [_ | _], operation_id: :create_pet}}
+  after
+    :telemetry.detach({__MODULE__, :telemetry_invalid})
+  end
+
+  test "emits telemetry start event before validation", %{schemas: schemas} do
+    handler_id = {__MODULE__, :telemetry_start}
+
+    :telemetry.attach(
+      handler_id,
+      [:openapi, :request, :validation, :start],
+      fn _event, measurements, metadata, _ ->
+        send(self(), {:telemetry_start, measurements, metadata})
+      end,
+      nil
+    )
+
+    build_conn(:post, "/pets", :create_pet, schemas)
+    |> Map.put(:body_params, %{"name" => "Max"})
+    |> put_req_header("content-type", "application/json")
+    |> Openapi.ValidatorPlug.call(plug_opts())
+
+    assert_received {:telemetry_start, %{system_time: _},
+                     %{operation_id: :create_pet, server: @server}}
+  after
+    :telemetry.detach({__MODULE__, :telemetry_start})
+  end
 end

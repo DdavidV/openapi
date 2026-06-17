@@ -41,7 +41,7 @@ defmodule Openapi.PhoenixIntegrationTest do
     assert conn.status == 200
     assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
 
-    assert match?(%{"openapi" => "3.0.0"}, Jason.decode!(conn.resp_body))
+    assert match?(%{"openapi" => "3.0.0"}, JSON.decode!(conn.resp_body))
   end
 
   test "GET swagger assets are served via wildcard route" do
@@ -85,7 +85,7 @@ defmodule Openapi.PhoenixIntegrationTest do
 
     assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
 
-    assert %{"error" => "Not found"} == Jason.decode!(conn.resp_body)
+    assert %{"error" => "Not found"} == JSON.decode!(conn.resp_body)
   end
 
   test "GET swagger file from any directory" do
@@ -97,7 +97,7 @@ defmodule Openapi.PhoenixIntegrationTest do
 
     assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
 
-    assert %{"error" => "forbidden"} == Jason.decode!(conn.resp_body)
+    assert %{"error" => "forbidden"} == JSON.decode!(conn.resp_body)
   end
 
   test "Swagger serverd at \"/\"" do

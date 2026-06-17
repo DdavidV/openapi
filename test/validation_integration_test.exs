@@ -38,4 +38,48 @@ defmodule Openapi.ValidationIntegrationTest do
 
     assert conn.status == 400
   end
+
+  test "emits dispatch start event before handler runs" do
+    handler_id = {__MODULE__, :dispatch_start}
+
+    :telemetry.attach(
+      handler_id,
+      [:openapi, :request, :dispatch, :start],
+      fn _event, measurements, metadata, _ ->
+        send(self(), {:dispatch_start, measurements, metadata})
+      end,
+      nil
+    )
+
+    ValidationRouter.call(conn(:get, "/pets/42"), [])
+
+    assert_received {:dispatch_start, %{system_time: _},
+                     %{operation_id: :get_pet, server: :Openapi}}
+  after
+    :telemetry.detach({__MODULE__, :dispatch_start})
+  end
+
+  test "emits dispatch stop event with conn and handler metadata" do
+    handler_id = {__MODULE__, :dispatch_stop}
+
+    :telemetry.attach(
+      handler_id,
+      [:openapi, :request, :dispatch, :stop],
+      fn _event, measurements, metadata, _ ->
+        send(self(), {:dispatch_stop, measurements, metadata})
+      end,
+      nil
+    )
+
+    ValidationRouter.call(conn(:get, "/pets/42"), [])
+
+    assert_received {:dispatch_stop, %{duration: _},
+                     %{
+                       operation_id: :get_pet,
+                       server: :Openapi,
+                       handler: Openapi.ValidationHandler
+                     }}
+  after
+    :telemetry.detach({__MODULE__, :dispatch_stop})
+  end
 end

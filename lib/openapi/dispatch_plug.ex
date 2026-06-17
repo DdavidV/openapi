@@ -67,7 +67,16 @@ defmodule Openapi.DispatchPlug do
 
   @impl true
   def call(%{private: %{openapi: openapi}} = conn, _opts) do
+    %{server: server, handler: handler, operation_id: operation_id} = openapi
     params = Map.put(conn.params, "openapi_context", openapi)
-    apply(openapi.handler, openapi.operation_id, [conn, params])
+
+    :telemetry.span(
+      [:openapi, :request, :dispatch],
+      %{conn: conn, operation_id: operation_id, server: server, handler: handler},
+      fn ->
+        result = apply(handler, operation_id, [conn, params])
+        {result, %{conn: result, operation_id: operation_id, server: server, handler: handler}}
+      end
+    )
   end
 end

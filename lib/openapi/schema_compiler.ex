@@ -1,7 +1,7 @@
 defmodule Openapi.SchemaCompiler do
   @moduledoc """
   Compiles the JSON schemas of a single OpenAPI operation into pre-resolved `ExJsonSchema` schemas
-  for use by `Openapi.ValidatorPlug`.
+  for use by `Openapi.ValidatorPlug` and `Openapi.ResponseValidatorPlug`.
 
   This is called at route-generation time (from `Openapi.Definition.phoenix_routes/1`),
   so the resulting schemas are embedded directly into each route's `private.openapi`
@@ -11,6 +11,7 @@ defmodule Openapi.SchemaCompiler do
 
   - The `requestBody` schema for `application/json` content
   - All `parameters` entries with their schemas
+  - The `responses` schemas per status code (for `application/json` content)
 
   All `$ref` pointers (e.g. `#/components/schemas/Pet`) are resolved inline against the
   full definition before being passed to `ExJsonSchema.Schema.resolve/1`, producing
@@ -18,14 +19,15 @@ defmodule Openapi.SchemaCompiler do
   """
 
   @doc """
-  Compiles the body and parameter schemas of a single OpenAPI `operation`.
+  Compiles the request body, parameter, and response schemas of a single OpenAPI `operation`.
 
   `$ref` pointers are resolved against the full `definition`.
   """
   def compile_operation(operation, definition) do
     %{
       body: body_schema(operation, definition),
-      parameters: parameters(operation, definition)
+      parameters: parameters(operation, definition),
+      responses: response_schemas(operation, definition)
     }
   end
 
@@ -52,6 +54,27 @@ defmodule Openapi.SchemaCompiler do
         required: param["required"] || false,
         schema: schema
       }
+    end)
+  end
+
+  defp response_schemas(operation, definition) do
+    operation
+    |> Map.get("responses", %{})
+    |> Enum.reduce(%{}, fn {status_str, response}, acc ->
+      case Integer.parse(status_str) do
+        {status_int, ""} ->
+          schema =
+            case get_in(response, ["content", "application/json", "schema"]) do
+              nil -> nil
+              s -> s |> dereference(definition) |> ExJsonSchema.Schema.resolve()
+            end
+
+          Map.put(acc, status_int, schema)
+
+        _ ->
+          # Skip wildcard ("4XX") and "default" status codes
+          acc
+      end
     end)
   end
 

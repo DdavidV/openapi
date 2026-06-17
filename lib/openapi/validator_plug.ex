@@ -16,26 +16,28 @@ defmodule Openapi.ValidatorPlug do
     a `Plug.Conn`. Defaults to a 400 JSON response with error details.
 
   ## Usage
+  ```elixir
+  pipeline :api do
+    plug :accepts, ["json"]
+    plug Openapi.ValidatorPlug
+  end
 
-      pipeline :api do
-        plug :accepts, ["json"]
-        plug Openapi.ValidatorPlug
-      end
+  # Only validate body, skip params
+  plug Openapi.ValidatorPlug, validate: [:body]
 
-      # Only validate body, skip params
-      plug Openapi.ValidatorPlug, validate: [:body]
-
-      # Custom error handler
-      plug Openapi.ValidatorPlug, on_error: &MyApp.Errors.handle_validation/2
+  # Custom error handler
+  plug Openapi.ValidatorPlug, on_error: &MyApp.Errors.handle_validation/2
+  ```
 
   ## Error format (default)
-
-      {
-        "errors": [
-          {"source": "body", "path": "#/name", "message": "Required property name was not present."},
-          {"source": "query", "param": "page", "message": "Type mismatch. Expected Integer but got String."}
-        ]
-      }
+  ```json
+  {
+    "errors": [
+      {"source": "body", "path": "#/name", "message": "Required property name was not present."},
+      {"source": "query", "param": "page", "message": "Type mismatch. Expected Integer but got String."}
+    ]
+  }
+  ```
   """
 
   @behaviour Plug
@@ -51,27 +53,41 @@ defmodule Openapi.ValidatorPlug do
   end
 
   @impl true
-  def call(%{private: %{openapi: %{schemas: schemas}}} = conn, %{
-        validate: parts,
-        on_error: on_error
-      })
+  def call(
+        %{private: %{openapi: %{server: server, operation_id: operation_id, schemas: schemas}}} =
+          conn,
+        %{validate: parts, on_error: on_error}
+      )
       when is_map(schemas) do
-    conn = if :query in parts, do: fetch_query_params(conn), else: conn
+    :telemetry.span(
+      [:openapi, :request, :validation],
+      %{conn: conn, operation_id: operation_id, server: server},
+      fn ->
+        conn = if :query in parts, do: fetch_query_params(conn), else: conn
 
-    body_errs = if :body in parts, do: body_errors(conn, schemas.body), else: []
+        body_errs = if :body in parts, do: body_errors(conn, schemas.body), else: []
 
-    query_errs =
-      if :query in parts,
-        do: param_errors(conn.query_params, schemas.parameters, "query"),
-        else: []
+        query_errs =
+          if :query in parts,
+            do: param_errors(conn.query_params, schemas.parameters, "query"),
+            else: []
 
-    path_errs =
-      if :path in parts, do: param_errors(conn.path_params, schemas.parameters, "path"), else: []
+        path_errs =
+          if :path in parts,
+            do: param_errors(conn.path_params, schemas.parameters, "path"),
+            else: []
 
-    case body_errs ++ query_errs ++ path_errs do
-      [] -> conn
-      errors -> on_error.(conn, errors) |> halt()
-    end
+        errors = body_errs ++ query_errs ++ path_errs
+
+        result =
+          case errors do
+            [] -> conn
+            _ -> on_error.(conn, errors) |> halt()
+          end
+
+        {result, %{conn: result, operation_id: operation_id, server: server, errors: errors}}
+      end
+    )
   end
 
   def call(conn, _opts), do: conn

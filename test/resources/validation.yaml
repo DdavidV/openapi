@@ -15,6 +15,10 @@ paths:
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
     get:
       operationId: listPets
       parameters:
@@ -74,6 +78,18 @@ components:
       required:
         - name
       properties:
+        name:
+          type: string
+        age:
+          type: integer
+    Pet:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
         name:
           type: string
         age:

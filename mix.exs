@@ -45,6 +45,7 @@ defmodule Openapi.MixProject do
       {:phoenix, "~> 1.8.3"},
       {:yaml_elixir, "~> 2.12"},
       {:ex_json_schema, "~> 0.11.4"},
+      {:telemetry, "~> 1.0"},
       {:excoveralls, "~> 0.18", only: :test},
       {:ex_doc, "~> 0.24", only: [:dev, :test], runtime: false}
     ]

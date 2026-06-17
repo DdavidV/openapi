@@ -115,6 +115,83 @@ Path and query parameters arrive as strings; the plug coerces them to the declar
   plug Openapi.ValidatorPlug, on_error: &MyApp.Errors.handle_validation/2
   ```
 
+
+## Telemetry
+
+`openapi` emits [Telemetry](https://hexdocs.pm/telemetry) span events at key points in the
+request lifecycle, following the same convention as Phoenix. Attach a handler once at
+application startup and you get timing, operation identity, and error information for every
+OpenAPI-routed request.
+
+### Validation events
+
+Emitted by `Openapi.ValidatorPlug` around request schema validation:
+
+| Event | When |
+|-------|------|
+| `[:openapi, :request, :validation, :start]` | Before validation runs |
+| `[:openapi, :request, :validation, :stop]` | After validation completes |
+
+The `:stop` event metadata includes `operation_id`, `server`, and `errors` — an empty list
+when validation passed, a list of error maps when it failed:
+
+```elixir
+:telemetry.attach("log-validation", [:openapi, :request, :validation, :stop], fn _event, _measurements, metadata, _config ->
+  if metadata.errors != [] do
+    Logger.warning("Validation failed for #{metadata.operation_id}: #{inspect(metadata.errors)}")
+  end
+end, nil)
+```
+
+### Dispatch events
+
+Emitted by `Openapi.DispatchPlug` around every handler invocation:
+
+| Event | When |
+|-------|------|
+| `[:openapi, :request, :dispatch, :start]` | Before the handler is called |
+| `[:openapi, :request, :dispatch, :stop]` | After the handler returns |
+| `[:openapi, :request, :dispatch, :exception]` | If the handler raises |
+
+Measurements: `system_time` (start), `duration` (stop/exception). Metadata:
+`%{conn, operation_id, server, handler}`.
+
+```elixir
+:telemetry.attach("log-dispatch", [:openapi, :request, :dispatch, :stop], fn _event, measurements, metadata, _config ->
+  Logger.info("#{metadata.operation_id} dispatched in #{div(measurements.duration, 1_000)}µs")
+end, nil)
+```
+
+## Response validation
+
+`Openapi.ResponseValidatorPlug` validates that your handler's response body matches the
+schema declared in the spec's `responses` section for each HTTP status code.
+
+It uses `Plug.Conn.register_before_send/2` to inspect the response after the handler runs,
+so it never blocks or alters the response — it just calls `on_error` if there is a mismatch.
+
+Best used in **dev and test** pipelines to catch spec drift before API consumers do:
+
+```elixir
+# config/dev.exs or a test-only pipeline
+pipeline :api do
+  plug :accepts, ["json"]
+  plug Openapi.ValidatorPlug
+  plug Openapi.ResponseValidatorPlug
+end
+```
+
+The default `on_error` logs a warning. In tests you can make it raise to fail fast:
+
+```elixir
+plug Openapi.ResponseValidatorPlug, on_error: fn conn, errors ->
+  raise "Response mismatch for #{conn.private.openapi.operation_id}: #{inspect(errors)}"
+end
+```
+
+Response schemas are compiled at the same time as request schemas — at route-generation time
+— so there is no runtime spec file dependency.
+
 ## Installation
 
 The package can be installed by adding `openapi` to your list of dependencies in `mix.exs`:
@@ -129,9 +206,6 @@ end
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and is published on [HexDocs](https://hexdocs.pm/openapi).
-
-## TODO:
-- Better definition merge (maybe conflict errors?)
 
 # License
 
