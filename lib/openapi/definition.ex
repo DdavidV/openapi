@@ -93,7 +93,8 @@ defmodule Openapi.Definition do
         method: String.to_atom(method),
         path: Regex.replace(~r/\{([^}]+)\}/, path, ":\\1"),
         handler: handler,
-        operation_id: operation_id
+        operation_id: operation_id,
+        schemas: Openapi.SchemaCompiler.compile_operation(operation, definition)
       }
     end
   end

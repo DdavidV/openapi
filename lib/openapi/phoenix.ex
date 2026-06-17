@@ -84,7 +84,8 @@ defmodule Openapi.Phoenix do
             openapi: %{
               server: server,
               handler: route.handler || handler,
-              operation_id: route.operation_id
+              operation_id: route.operation_id,
+              schemas: route.schemas
             }
           }
         )

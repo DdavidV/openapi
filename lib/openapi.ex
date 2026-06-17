@@ -72,6 +72,7 @@ defmodule Openapi do
   Stores the OpenAPI definition in persistent storage for the given server.
   """
   def save_definition(_server, definition) when map_size(definition) == 0, do: :ok
+
   def save_definition(server, definition) do
     :persistent_term.put({:openapi, :specs, server}, definition)
   end

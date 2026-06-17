@@ -39,10 +39,85 @@ At runtime, requests are dispatched based on the generated metadata:
 - Otherwise, the macro uses the per-operation `x-handler` value from the OpenAPI file
 - The `operationId` determines the function to call inside the handler module
 
+## Request validation
+
+`Openapi.ValidatorPlug` validates incoming requests against the schemas defined in your
+OpenAPI document, using [`ex_json_schema`](https://hex.pm/packages/ex_json_schema).
+
+Add it to any pipeline. It validates only the operations that actually define schemas, and
+passes everything else through untouched:
+
+```elixir
+pipeline :api do
+  plug :accepts, ["json"]
+  plug Openapi.ValidatorPlug
+end
+```
+
+The schemas are resolved once at compile time and embedded into each route, so validation
+works in any environment without relying on the spec ever being served.
+
+Given an OpenAPI operation like:
+
+```yaml
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPet'
+components:
+  schemas:
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        age: { type: integer }
+```
+
+A request with an invalid body is rejected with a `400` JSON response before reaching your
+handler:
+
+```json
+{
+  "errors": [
+    {"source": "body", "path": "#/name", "message": "Required property name was not present."}
+  ]
+}
+```
+
+What gets validated:
+- **Request body** — the `application/json` `requestBody` schema
+- **Query parameters** — declared `parameters` with `in: query`
+- **Path parameters** — declared `parameters` with `in: path`
+
+Path and query parameters arrive as strings; the plug coerces them to the declared type
+(`integer`, `number`, `boolean`) before validating.
+
+### Options
+
+- `:validate` — which parts to validate. Defaults to `[:body, :query, :path]`:
+
+  ```elixir
+  # Only validate request bodies, skip params
+  plug Openapi.ValidatorPlug, validate: [:body]
+  ```
+
+- `:on_error` — a `fun(conn, errors)` returning a `Plug.Conn`, used to customize the failure
+  response. Defaults to a `400` JSON response with error details:
+
+  ```elixir
+  plug Openapi.ValidatorPlug, on_error: &MyApp.Errors.handle_validation/2
+  ```
+
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `openapi` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `openapi` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -53,11 +128,9 @@ end
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/openapi>.
+and is published on [HexDocs](https://hexdocs.pm/openapi).
 
 ## TODO:
-- JSON schema validation
 - Better definition merge (maybe conflict errors?)
 
 # License
