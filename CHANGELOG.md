@@ -1,3 +1,8 @@
+## 0.3.1 (2026 June 22)
+
+### Enhancements
+- added tuple style dynamic file resolver for openapi macro
+
 ## 0.3.0 (2026 June 17)
 
 From this version `openapi` contains every feature that has been planned from the start.
