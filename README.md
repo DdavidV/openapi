@@ -39,6 +39,22 @@ At runtime, requests are dispatched based on the generated metadata:
 - Otherwise, the macro uses the per-operation `x-handler` value from the OpenAPI file
 - The `operationId` determines the function to call inside the handler module
 
+### Spec file paths
+
+The OpenAPI file is read both at compile time (to generate routes) and at runtime (to serve the
+spec via Swagger UI). A plain string is resolved relative to the current working directory, which
+works in development but breaks in most releases where the working directory differs from the
+application's installation path.
+
+For release-safe paths, pass an `{app, relative_path}` tuple instead. It is resolved against the
+OTP application's `priv` directory via `:code.priv_dir/1` at call time:
+
+```elixir
+openapi {:my_app, "swagger.yaml"}
+```
+
+This reads `swagger.yaml` from `MyApp`'s `priv/` directory regardless of the working directory.
+
 ## Request validation
 
 `Openapi.ValidatorPlug` validates incoming requests against the schemas defined in your

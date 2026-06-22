@@ -24,6 +24,18 @@ defmodule Openapi.DefinitionTest do
     assert 19 == length(Openapi.Definition.phoenix_routes(definition))
   end
 
+  test "Read definition from {app, relative_path} tuple" do
+    priv_dir = :code.priv_dir(:openapi)
+    relative_path = "definition_tuple_test.json"
+    target = Path.join(priv_dir, relative_path)
+    File.cp!("test/resources/petstore_openapi_3.0.4.json", target)
+    on_exit(fn -> File.rm(target) end)
+
+    definition = Openapi.read_file!({:openapi, relative_path})
+    assert match?(%{"openapi" => "3.0.4"}, definition)
+    assert 19 == length(Openapi.Definition.phoenix_routes(definition))
+  end
+
   test "Unsupported definition file" do
     assert_raise Openapi.Error, fn ->
       Openapi.read_file!("test/resources/unsupported.txt")

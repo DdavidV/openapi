@@ -13,10 +13,20 @@ defmodule Openapi do
   @doc """
   Reads and parses an OpenAPI definition file.
 
+  The path can be either a plain string or a `{app, relative_path}` tuple. The tuple form resolves
+  `relative_path` against the OTP application's priv directory at call time via `:code.priv_dir/1`.
+
   Supports multiple file formats (e.g. YAML, JSON) by dispatching to the appropriate parser based on
   the file extension.
   """
-  def read_file!(path) do
+  def read_file!({app, relative_path}) when is_atom(app) do
+    :code.priv_dir(app)
+    |> Path.join(relative_path)
+    |> to_string()
+    |> read_file!()
+  end
+
+  def read_file!(path) when is_binary(path) do
     path
     |> Path.extname()
     |> normalize_ext()
